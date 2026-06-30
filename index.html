@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Manager China</title>
+    <style>
+        @media (max-width: 600px) {
+    /* Делаем статистику вертикальной на телефонах */
+    #stats {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Увеличиваем модальное окно на весь экран телефона */
+    #modal {
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 0 !important;
+    }
+    
+    .modal-content {
+        width: 90% !important;
+    }
+    
+    /* Меню делаем компактнее */
+    nav {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+        :root { --primary: #4a90e2; --danger: #ff6b6b; --success: #27ae60; --transition: all 0.3s ease; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 50px; }
+        
+        .banner { background: url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1200') center/cover; padding: 60px 20px; text-align: center; color: white; }
+        
+        nav { 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+            padding: 20px; display: flex; justify-content: center; gap: 20px; 
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        nav button { 
+            padding: 12px 30px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; 
+            transition: var(--transition); background: rgba(255,255,255,0.15); color: white; backdrop-filter: blur(5px);
+        }
+        nav button:hover { background: var(--primary); transform: translateY(-3px); }
+
+        .card, .stat-box { position: relative; overflow: hidden; color: white; border-radius: 15px; margin-bottom: 15px; background-size: cover; background-position: center; transition: var(--transition); }
+        .card::before, .stat-box::before { content: ""; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1; }
+        .content { position: relative; z-index: 2; padding: 15px; }
+        .card:hover { transform: scale(1.02); }
+        .card { background-image: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500'); display: flex; justify-content: space-between; align-items: center; }
+        .stat-box { background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=500'); text-align: center; }
+
+        .btn-act { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; margin: 5px; transition: var(--transition); }
+        .btn-act:hover { transform: scale(1.1); background: var(--primary); color: white; }
+
+        /* ОКНО ДОБАВЛЕНИЯ С ФОНОМ */
+        #modal { 
+            display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content { 
+            background: url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=800') center/cover;
+            padding: 40px; border-radius: 20px; width: 90%; max-width: 400px; color: white; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="banner"><h1>CHINA TRADE</h1></div>
+<nav>
+    <button onclick="showPage('page1')">📦 ЗАКАЗЫ</button>
+    <button onclick="showPage('page2')">📈 СТАТИСТИКА</button>
+</nav>
+
+<div id="page1" class="page" style="display:block; max-width:800px; margin:20px auto;">
+    <button onclick="openModal()" style="background:var(--success); color:white; width:100%; padding:15px; border-radius:15px; border:none; cursor:pointer; font-weight:bold;">+ НОВЫЙ ЗАКАЗ</button>
+    <div id="orderList" style="margin-top:20px;"></div>
+</div>
+
+<div id="page2" class="page" style="display:none; max-width:800px; margin:20px auto;">
+    <div style="text-align:center; margin-bottom:20px;">
+        <button class="btn-act" onclick="updateView('week')">Неделя</button>
+        <button class="btn-act" onclick="updateView('month')">Месяц</button>
+        <button class="btn-act" onclick="updateView('year')">Год</button>
+        <button class="btn-act" onclick="updateView('all')">Все</button>
+    </div>
+    <div id="stats" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;"></div>
+    <div id="filteredList" style="margin-top:20px;"></div>
+</div>
+
+<div id="modal">
+    <div class="modal-content">
+        <button onclick="document.getElementById('modal').style.display='none'" style="margin-bottom:20px; background:var(--danger); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">← НАЗАД</button>
+        <h2 style="margin-top:0;">Данные заказа</h2>
+        <input type="text" id="mName" placeholder="Название" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br>
+        <input type="number" id="mPaid" placeholder="Выручка" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br>
+        <input type="number" id="mCost" placeholder="Закуп" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br>
+        <input type="number" id="mDeliv" placeholder="Доставка" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box;"><br>
+        <button onclick="saveOrder()" style="width:100%; padding:15px; background:var(--primary); color:white; border:none; cursor:pointer; font-weight:bold;">СОХРАНИТЬ</button>
+    </div>
+</div>
+
+<script>
+    let orders = JSON.parse(localStorage.getItem('chinaTradeOrders')) || [];
+    let editId = null;
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if(id === 'page1') renderOrders();
+        if(id === 'page2') updateView('all');
+    }
+
+    function openModal(id = null) {
+        editId = id;
+        document.getElementById('modal').style.display = 'flex';
+        if(id) {
+            let o = orders.find(x => x.id === id);
+            document.getElementById('mName').value = o.name;
+            document.getElementById('mPaid').value = o.paid;
+            document.getElementById('mCost').value = o.cost;
+            document.getElementById('mDeliv').value = o.deliv;
+        } else {
+            document.getElementById('mName').value = '';
+            document.getElementById('mPaid').value = '';
+            document.getElementById('mCost').value = '';
+            document.getElementById('mDeliv').value = '';
+        }
+    }
+
+    function saveOrder() {
+        let order = {
+            id: editId || Date.now(),
+            name: document.getElementById('mName').value,
+            paid: parseFloat(document.getElementById('mPaid').value) || 0,
+            cost: parseFloat(document.getElementById('mCost').value) || 0,
+            deliv: parseFloat(document.getElementById('mDeliv').value) || 0,
+            date: new Date().toISOString()
+        };
+        if(editId) orders = orders.map(o => o.id === editId ? order : o);
+        else orders.unshift(order);
+        localStorage.setItem('chinaTradeOrders', JSON.stringify(orders));
+        renderOrders();
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function deleteOrder(id) {
+        if(confirm('Удалить заказ?')) {
+            orders = orders.filter(o => o.id !== id);
+            localStorage.setItem('chinaTradeOrders', JSON.stringify(orders));
+            renderOrders();
+        }
+    }
+
+    function renderOrders() {
+        document.getElementById('orderList').innerHTML = orders.map(o => `
+            <div class="card">
+                <div class="content"><strong>${o.name}</strong><br><small>${new Date(o.date).toLocaleString()}</small><br>Прибыль: ${o.paid - o.cost - o.deliv}</div>
+                <div class="content">
+                    <button class="btn-act" onclick="openModal(${o.id})">✏️</button>
+                    <button class="btn-act" onclick="deleteOrder(${o.id})">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateView(filter) {
+        let now = new Date();
+        let filtered = orders.filter(o => {
+            let d = new Date(o.date);
+            if(filter === 'week') return (now - d) < 7 * 24 * 60 * 60 * 1000;
+            if(filter === 'month') return (now - d) < 30 * 24 * 60 * 60 * 1000;
+            if(filter === 'year') return (now - d) < 365 * 24 * 60 * 60 * 1000;
+            return true;
+        });
+
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-box"><div class="content"><h3>Заказов</h3><p>${filtered.length}</p></div></div>
+            <div class="stat-box"><div class="content"><h3>Выручка</h3><p>${filtered.reduce((s,o)=>s+o.paid,0)}</p></div></div>
+            <div class="stat-box"><div class="content"><h3>Прибыль</h3><p>${filtered.reduce((s,o)=>s+(o.paid-o.cost-o.deliv),0)}</p></div></div>
+        `;
+        document.getElementById('filteredList').innerHTML = filtered.map(o => `
+            <div class="card"><div class="content">${o.name} | Прибыль: ${o.paid - o.cost - o.deliv} | ${new Date(o.date).toLocaleDateString()}</div></div>
+        `).join('');
+    }
+    renderOrders();
+</script>
+</body>
+</html>
